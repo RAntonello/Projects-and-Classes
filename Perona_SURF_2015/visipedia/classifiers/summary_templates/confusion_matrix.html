@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>
+    	Confusion Matrix
+    </title>
+    <style>
+     	body{
+     		min-width: {{ recommended_width }}px;
+     		min-height: {{ recommended_height }}px;	
+     	}
+     	.background {
+		  fill: #eee;
+		}
+		
+		line {
+		  stroke: #fff;
+		}
+		
+		text.active {
+		  fill: red;
+		} 
+		
+		svg {
+		  font: 8px sans-serif;
+		}
+		
+		.axis path, .axis line {
+		  fill: none;
+		  stroke: #000;
+		  shape-rendering: crispEdges;
+		}
+		
+		.inline-list li{
+			//display : inline;
+			list-style-type: none;
+		}
+		li.key{
+			width: 60px;
+			height: 20px;
+		 	//border-top-style: solid;
+			font-size: .75em;
+			padding-left: 0;
+			padding-right: 0;
+			float: left;
+		}
+     
+    </style>
+   
+  </head>
+
+  <body>
+	<h1>Accuracy: {{ accuracy }}</h1>
+	<div id="legend">
+		<p>Cell colors represent the percentage of data in the cell for the given row:</p>
+	</div>
+	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	<script>
+		
+		var legend = d3.select('#legend')
+			.append('ul')
+			.attr('class', 'inline-list');
+		var keys = legend.selectAll('li.key')
+			.data(d3.range(10,101, 10).reverse())
+			.enter().append('li')
+			.attr('class', 'key')
+			.style('background-color', function(d){
+				var val = d3.scale.quantize().domain(d3.range(101)).range(d3.range(225).reverse())(d);
+				return 'hsl(' + val + ',100%,50%)';
+			})
+			.text(function(d){return '' + d + '%'});
+		
+		var margin = {top: 200, right: 0, bottom: 10, left: 200},
+			width = {{ recommended_width }},
+			height = {{ recommended_height }};
+		
+		var x = d3.scale.ordinal().rangeBands([0, width]);
+		//var	c = d3.scale.ordinal().range(['#fff7ec', '#fee8c8','#fdd49e','#fdbb84','#fc8d59','#ef6548','#d7301f','#b30000','#7f0000' ]).domain(d3.range(51));
+		
+		var svg = d3.select("body").append("svg")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			//.style("margin-left", margin.left + "px")
+		  .append("g")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		
+	  var cm_data = {{ d3_data|safe }};
+	  var confusion_matrix = cm_data.confusion_matrix;
+	  var nodes = cm_data.nodes;
+	  var n = nodes.length;
+	  var links = cm_data.links;
+	  
+	  var matrix = []
+	  // Compute index per node.
+	  nodes.forEach(function(node, i) {
+		matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: confusion_matrix[i][j]}; });
+	  });
+	
+	  // Precompute the orders.
+	  var orders = {
+		name: d3.range(n).sort(function(a, b) { return d3.ascending(nodes[a].name, nodes[b].name); }),
+		correct_count: d3.range(n).sort(function(a, b) { return nodes[a].correct_count - nodes[b].correct_count; }),
+		group: d3.range(n).sort(function(a, b) { return nodes[b].group - nodes[a].group; }),
+		index : d3.range(n).sort(function(a, b) { return nodes[a].index - nodes[b].index; })
+	  };
+	
+	  // The default sort order.
+	  x.domain(orders.index);
+	
+	  svg.append("rect")
+		  .attr("class", "background")
+		  .attr("width", width)
+		  .attr("height", height);
+	
+	  var row = svg.selectAll(".row")
+		  .data(matrix)
+		.enter().append("g")
+		  .attr("class", "row")
+		  .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
+		  .each(row)
+		  .each(rowText);
+	
+	  row.append("line")
+		  .attr("x2", width);
+	
+	  row.append("text")
+	      .attr("class", "rowLabel")
+		  .attr("x", -6)
+		  .attr("y", x.rangeBand() / 2)
+		  .attr("dy", ".32em")
+		  .attr("text-anchor", "end")
+		  .text(function(d, i) { return nodes[i].name; });
+	
+	  var column = svg.selectAll(".column")
+		  .data(matrix)
+		.enter().append("g")
+		  .attr("class", "column")
+		  .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
+	
+	  column.append("line")
+		  .attr("x1", -width);
+	
+	  column.append("text")
+	      .attr("class", "columnLabel")
+		  .attr("x", 6)
+		  .attr("y", x.rangeBand() / 2)
+		  .attr("dy", ".32em")
+		  .attr("text-anchor", "start")
+		  .text(function(d, i) { return nodes[i].name; });
+	  
+	  
+	  var comparison_links = {{ comparison_links|safe }};
+	  var detail_links = {{ detail_links|safe }};
+	  function cellClick(d){
+	  	var row = d.y;
+	  	var col = d.x;
+	  	if(row == col){
+	  		// go the category detail page
+	  		var link = detail_links[nodes[row].id];
+	  		window.open(link, '_blank');
+	  		return;
+	  	}
+	  	
+	  	if(confusion_matrix[row][col] == 0){
+	  		// No data to compare. 
+	  		return;
+	  	}
+	  	var cat_index_1;
+	  	var cat_index_2;
+	  	if(row > col){
+	  		cat_index_1 = row;
+	  		cat_index_2 = col;
+	  	}
+	  	else{
+	  		cat_index_1 = col;
+	  		cat_index_2 = row;
+	  	}
+	  	
+	  	var link = comparison_links[cat_index_1][cat_index_2];
+	  	//console.log('going to ' + link);
+	  	window.open(link, '_blank');
+	  }
+	  
+	  
+	  function row(row) {
+		var cell = d3.select(this).selectAll(".cell")
+			.data(row.filter(function(d) { return d.z; }))
+		  .enter().append("rect")
+			.attr("class", "cell")
+			.attr("x", function(d) { return x(d.x); })
+			.attr("width", x.rangeBand())
+			.attr("height", x.rangeBand())
+			.style("fill", function(d) { 
+					//return c(d.z); 
+					var val = d3.scale.quantize().domain(d3.range(d3.sum(confusion_matrix[d.y]))).range(d3.range(225).reverse())(d.z);
+					return 'hsl(' + val + ',100%,50%)';
+				})
+			.on("mouseover", mouseover)
+			.on("mouseout", mouseout)
+			.on("click", cellClick);
+	  }
+	  
+	  function rowText(row){
+	   	var cellText = d3.select(this).selectAll(".cellText")
+		  	.data(row.filter(function(d) { return d.z; }))
+		  .enter().append("text")
+			.attr("class", "cellText")
+			.attr("x", function(d) { return x(d.x); })
+			.attr("y", 6)
+			.attr("width", x.rangeBand())
+			.attr("height", x.rangeBand())
+			.attr("dy", ".32em")
+			.attr("text-anchor", "start")
+			.text(function(d, i) { return d.z; })
+			.on("click", cellClick);	
+	  }
+	
+	  function mouseover(p) {
+		d3.selectAll(".row text.rowLabel").classed("active", function(d, i) { return i == p.y; });
+		d3.selectAll(".column text.columnLabel").classed("active", function(d, i) { return i == p.x; });
+		
+		// It would be nice to add a tooltip here
+		
+	  }
+	
+	  function mouseout() {
+		d3.selectAll("text").classed("active", false);
+	  }
+	  
+	  
+	/*
+	  d3.select("#order").on("change", function() {
+		clearTimeout(timeout);
+		order(this.value);
+	  });
+	
+	  function order(value) {
+		x.domain(orders[value]);
+	
+		var t = svg.transition().duration(2500);
+	
+		t.selectAll(".row")
+			.delay(function(d, i) { return x(i) * 4; })
+			.attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
+		  .selectAll(".cell")
+			.delay(function(d) { return x(d.x) * 4; })
+			.attr("x", function(d) { return x(d.x); });
+	
+		t.selectAll(".column")
+			.delay(function(d, i) { return x(i) * 4; })
+			.attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
+	  }
+	  */
+	  /*
+	  var timeout = setTimeout(function() {
+		order("group");
+		d3.select("#order").property("selectedIndex", 2).node().focus();
+	  }, 5000);
+	  */
+		
+	</script>
+  </body>
+</html>

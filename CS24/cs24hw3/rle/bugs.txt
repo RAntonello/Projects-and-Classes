@@ -1,0 +1,24 @@
+Bug 1:
+When proceeding through the counts in find_space loop, the code
+doesn't account for the fact that the counts are stored only 
+in every other memory location, so I changed
+"add $2, %esi" from "add $1, %esi".
+
+Bug 2: 
+After we have finished getting the counts, 
+we need to return %ecx to the start of the
+source array again to start the decode loop because 
+the call to malloc modified it.
+I added "mov 8(%ebp), %ecx" again to fix this. (reloading 8(%ebp))
+This could have also been done by pushing/popping ecx from the stack.
+
+Bug 3: 
+We need to put each decoded character in a subsequent location in eax,
+so I added the line "add $1, %edi" after each character is placed.
+
+Bug 4:
+The program was incorrectly computing the actual_length because 
+it did not account for overflow in register bl. 
+So I added the line "movzbl  (%ecx, %esi), %edx"
+to zero extend this count to 32 bits after which I could
+directly add to %ebx instead of only %bl.

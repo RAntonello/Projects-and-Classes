@@ -1,0 +1,5 @@
+ mov  8(%ebp), %edx # %ecx register now contains address of Shape subclass
+ mov  (%edx), %ecx	# get class of shape
+ mov  (%ecx), %ecx	# get getVolume function of shape
+ push  %edx			# push argument to pointer onto stack 
+ call *%ecx         # call getVolume indirectly

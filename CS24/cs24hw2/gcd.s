@@ -1,0 +1,24 @@
+.text
+.global recur_gcd
+
+## This utilizes Euclid's GCD algorithm.
+ 
+recur_gcd:
+        pushl    %ebp ## Save old base pointer
+        movl     %esp, %ebp ## Replace stack pointer with new base pointer
+        movl     8(%ebp), %eax ## put first argument (a) into %eax
+        movl     12(%ebp), %ebx ## put second argument (b) into %ebx
+
+.recur:
+        cmpl     $0, %ebx ## If second argument is 0
+        je      .halt ## halt the recursion and return the first argument
+        mov      $0, %edx ## Otherwise, set d register to 0  (prepare for div)
+        divl     %ebx, %eax ## Divide b by a, saving in edx(remainder):eax(quotient)
+        movl     %ebx, %eax ## make second argument a
+        movl    %edx, %ebx ## make remainder b
+        jmp     .recur ## repeat recursion
+ 
+.halt:      
+        movl %ebp,%esp     ## Pop local stack.
+        popl %ebp          ## Pop old base of frame.
+        ret

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>
+    	Comparisons
+    </title>
+    <style>
+      #container{
+      	float:left;
+      	width:100%;
+      }
+     .image-scroll{
+     	height:90vh;
+    	overflow-y: scroll;
+     }
+     .column{
+     	float: left; 
+     	width: 25%;
+     }
+    </style>
+   
+  </head>
+
+  <body>
+  	
+  	<h1>{{ category1_name }} vs {{ category2_name }}</h1>
+  	<br>
+  	<hr>
+  	<br>
+  	<div id="#container">
+		<div class='column'>
+			<h4>{{ category1_name }} True Positives</h4>
+			<div class='image-scroll'>
+				{% for image_src in category1_true_positives %}
+					<div>
+						<img src="{{ image_src }}" /> 
+					</div>
+				{% endfor %}
+			</div>
+		</div>
+		<div class='column'>
+			<h4>{{ category1_name }} Images Classified as {{ category2_name }}</h4>
+			<div class='image-scroll'>
+				{% for image_src in category1_false_negatives %}
+					<div>
+						<img src="{{ image_src }}" /> 
+					</div>
+				{% endfor %}
+			</div>
+		</div>
+		<div class='column'>
+			<h4>{{ category2_name }} Images Classified as {{ category1_name }}</h4>
+			<div class='image-scroll'>
+				{% for image_src in category2_false_negatives %}
+					<div>
+						<img src="{{ image_src }}" /> 
+					</div>
+				{% endfor %}
+			</div>
+		</div>
+		<div class='column'>
+			<h4>{{ category2_name }} True Positives</h4>
+			<div class='image-scroll'>
+				{% for image_src in category2_true_positives %}
+					<div>
+						<img src="{{ image_src }}" /> 
+					</div>
+				{% endfor %}
+			</div>
+		</div>
+	</div>
+	<script>
+		
+	</script>
+  </body>
+</html>

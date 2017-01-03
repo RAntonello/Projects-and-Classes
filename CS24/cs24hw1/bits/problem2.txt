@@ -1,0 +1,5 @@
+This expression reduces n by the smallest-nonzero bit in its base 2 representation. This is because subtracting 1 from a base 2 number is the same as setting the lowest-valued "1" to "0" and setting all lower place values to "1". 
+
+So, for instance, it reduces 18 to 16, because the binary representation of 18 is 10010 and removing the lowest non-zero bit of this gives 10000, which is 16. 
+
+Therefore, in order to count the number of one-bits in an integer, we can simply count the number of times this expression needs to be applied to an integer until it reaches 0.

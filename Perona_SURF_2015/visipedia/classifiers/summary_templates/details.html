@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>
+    	Details
+    </title>
+    <style>
+     .true_positives{
+     	height:90vh;
+    	overflow-y: scroll;
+     }
+     .false_positives{
+     	height:90vh;
+    	overflow-y: scroll;
+     }
+     .false_negatives{
+     	height:90vh;
+    	overflow-y: scroll;
+     }
+     .left-column{
+     	float: left; 
+     	width: 33%;
+     }
+     .center-column{
+     	display: inline-block;
+     	width: 33%;
+     }
+     .right-column{
+     	float: right;
+     	width: 33%;
+     }
+    </style>
+   
+  </head>
+
+  <body>
+  	
+  	<h1> {{ category_name }} </h1>
+  	<br>
+  	<hr>
+  	<br>
+  	<div class='left-column'>
+  		<h1>True Positives ({{ true_positives|length }} / {{ total_images }})</h1>
+  		<div class='true_positives'>
+			{% for image_src in true_positives %}
+				<div>
+					<img src="{{ image_src }}" /> 
+				</div>
+			{% endfor %}
+		</div>
+  	</div>
+  	<div class='center-column'>
+  		<h1>False Positives ({{ false_positives|length }})</h1>
+  		<div class='false_positives'>
+			{% for image_src, actual_label in false_positives %}
+				<div>
+					<img src="{{ image_src }}" />
+				</div>
+				<div>
+					{{ actual_label }} 
+				</div>
+			{% endfor %}
+		</div>
+  	</div>
+  	<div class='right-column'>
+  		<h1>False Negatives ({{ false_negatives|length }} / {{ total_images }})</h1>
+  		<div class='false_negatives'>
+			{% for image_src, pred_label in false_negatives %}
+				<div>
+					<img src="{{ image_src }}" /> 
+				</div>
+				<div>
+					{{ pred_label }}
+				</div>
+			{% endfor %}
+		</div>
+  	</div>
+  	
+	<script>
+		
+	</script>
+  </body>
+</html>

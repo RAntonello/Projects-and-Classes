@@ -1,0 +1,3 @@
+Tokens used on assignment: 1
+
+Total tokens used thus far: 3

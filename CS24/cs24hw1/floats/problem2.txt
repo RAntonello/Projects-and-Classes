@@ -1,0 +1,2 @@
+This results are different because of different levels of precision loss in the intermediate values. 
+The method which first sorts the numbers will be the most accurate because the lower intermediate values will be retained to higher precision. Consider that inputs 0.0000001 + 0.0000001 ... + 100 will likely have higher precision than 100 +  0.0000001 ... + 0.000001 because the intermediate sum in the former case might grow to be significant once 100 is added, while in the second case each of the "0.0000001"s are discarded individually due to lack of precision.

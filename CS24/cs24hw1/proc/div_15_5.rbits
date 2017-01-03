@@ -1,0 +1,8 @@
+000f # dividend
+0005 # divisor
+ffff   
+8000 # bitmask
+ffff
+ffff
+ffff
+ffff

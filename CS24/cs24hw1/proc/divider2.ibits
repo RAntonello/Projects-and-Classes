@@ -1,0 +1,9 @@
+17b3    #   R6<-R6-R6  -- set divisor to 0
+bdb87    #   R7<-R0-R6  -- set rem to dividend
+be76d    #   LOOP_TOP (6): R5<-R5+1  -- i++
+bda7f    #   R7<-R7-R1  -- rem = rem - divisor
+be7b6    #   R6<-R6+1  -- quotient = quotient + 1
+bf3dc    #   R4<-R3&R7  -- i==arg
+bdae5    #   R5<-R4-R3
+bfb46    #  BNZ R5 3   -- if (i!=arg) branch LOOP_TOP
+c0c00    #   done       -- finished, exit leaving result in R6, R7

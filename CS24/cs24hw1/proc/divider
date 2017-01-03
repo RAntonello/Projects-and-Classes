@@ -1,0 +1,13 @@
+110 110 110 1 0010  #   R6<-R6-R6  -- set divisor to 0
+011 110 110 1 0101  #   R3<-R6+1    -- set r3 to bitmask 0...001
+011 110 011 1 0101  #   R3<-R6-R3  -- set r3 to bitmask 11..11
+011 011 011 1 1100  #   R3<-R3 logical shift right -- set r3 to bitmask 01..11
+011 011 011 1 0001  #   R3<-invert R3 -- sets r3 to 1000...0
+111 000 110 1 0010  #   R7<-R0-R6  -- set rem to dividend
+101 101 101 1 0101  #  LOOP_TOP (6): R5<-R5+1  -- i++ 
+111 111 001 1 0010  #   R7<-R7-R1  -- rem = rem - divisor
+110 110 110 1 0101  #   R6<-R6+1  -- quotient = quotient + 1
+100 011 111 1 1000  #   R4<-R3&R7  -- i==arg 
+101 100 011 1 0010  #   R5<-R4-R3
+000110 101 1 1010   #  BNZ R5 3   -- if (i!=arg) branch LOOP_TOP
+3c00  #   done       -- finished, exit leaving result in R6, R7

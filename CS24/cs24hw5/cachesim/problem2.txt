@@ -1,0 +1,41 @@
+d. ./heaptest 32:256:1 (Block size of 32 bytes, 256 cache sets, 1 line per set)
+Miss Rate: 2.40% 
+
+Results:
+Memory-Access Statistics:
+
+ * Cache reads=387851976 writes=156711356 hits=531488886 misses=13074446 
+   miss-rate=2.40% random replacement policy
+ * Memory reads=418382272 writes=334897760
+
+
+
+e. ./heaptest 32:1:256 (Block size of 32 bytes, 1 cache set, 256 lines per set)
+Miss Rate: 2.45%
+
+Memory-Access Statistics:
+
+ * Cache reads=387851976 writes=156711356 hits=531217776 misses=13345556 
+   miss-rate=2.45% random replacement policy
+ * Memory reads=427057792 writes=345422560
+
+g. 
+
+Direct-mapped: ./heaptest 32:256:1 (Block size of 32 bytes, 256 cache sets, 1 line per set)
+Miss Rate: 2.40% 
+
+Memory-Access Statistics:
+
+ * Cache reads=387851976 writes=156711356 hits=531488886 misses=13074446 
+   miss-rate=2.40% LRU replacement policy
+ * Memory reads=418382272 writes=334897760
+
+Fully-associative: ./heaptest 32:1:256 (Block size of 32 bytes, 1 cache set, 256 lines per set)
+
+Miss Rate: 2.26%
+
+Memory-Access Statistics:
+
+ * Cache reads=387851976 writes=156711356 hits=532270889 misses=12292443 
+   miss-rate=2.26% LRU replacement policy
+ * Memory reads=393358176 writes=315978048

@@ -1,0 +1,112 @@
+Multimap Caching Performance
+============================
+
+a)  Size of hardware cache lines:
+64B for all caches
+8 lines per set (512B per set)
+
+b)  Output of mmperf:
+
+Testing multimap performance:  300000 pairs, 1000000 probes, random keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range [0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range [0, 1000).
+Total hits:  997144/1000000 (99.7%)
+Total wall-clock time:  14.70 seconds		us per probe:  14.703 us
+
+Testing multimap performance:  300000 pairs, 1000000 probes, incrementing keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range [0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range [0, 1000).
+Total hits:  997715/1000000 (99.8%)
+Total wall-clock time:  26.24 seconds		us per probe:  26.240 us
+
+Testing multimap performance:  300000 pairs, 1000000 probes, decrementing keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range [0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range [0, 1000).
+Total hits:  997325/1000000 (99.7%)
+Total wall-clock time:  29.22 seconds		us per probe:  29.216 us
+
+Testing multimap performance:  15000000 pairs, 1000000 probes, random keys.
+Adding 15000000 pairs to multimap.  Keys in range [0, 100000), values in range [0, 50).
+Probing multimap 1000000 times.  Keys in range [0, 100000), values in range [0, 50).
+Total hits:  949586/1000000 (95.0%)
+Total wall-clock time:  4.90 seconds		us per probe:  4.900 us
+
+Testing multimap performance:  100000 pairs, 50000 probes, incrementing keys.
+Adding 100000 pairs to multimap.  Keys in range [0, 100000), values in range [0, 50).
+Probing multimap 50000 times.  Keys in range [0, 100000), values in range [0, 50).
+Total hits:  976/50000 (2.0%)
+Total wall-clock time:  67.07 seconds		us per probe:  1341.472 us
+
+Testing multimap performance:  100000 pairs, 50000 probes, decrementing keys.
+Adding 100000 pairs to multimap.  Keys in range [0, 100000), values in range [0, 50).
+Probing multimap 50000 times.  Keys in range [0, 100000), values in range [0, 50).
+Total hits:  980/50000 (2.0%)
+Total wall-clock time:  80.68 seconds		us per probe:  1613.557 us
+
+
+c)  Explanation of tests:
+
+In the first three tests, the tests are primarily determining the performance of value
+access, since they only work on relatively small trees (at most 50 keys) which have
+a large number of values stored at each node (up to 1,000).
+
+The second three tests are mainly testing the performance of traversing the tree,
+as they work with relatively few values (at most 50), but a very large maximum 
+number of keys (100,000).
+
+e)  Explanation of your optimizations:
+
+Optimization 1: 
+
+The initial implementation used a linked list to store values in the multimap. This 
+was non-optimal for caching because the values at a node had no locality. I 
+changed the linked list into a dynamically allocated array to mitigate this.
+Since the values at a node are now all highly local due to being stored sequentially,
+this makes the program more cache-friendly.
+
+Optimization 2:
+
+The original implementation used pointers to traverse the tree. Similarly to above,
+these pointers have no locality, so fetching new vertices often resulted in misses. 
+I stored the vertices in a dynamically allocated array, so that the caching has increased
+efficiency while traversing the tree. 
+
+f)  Output of ommperf:
+
+Testing multimap performance:  300000 pairs, 1000000 probes, random keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range [0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range [0, 1000).
+Total hits:  997144/1000000 (99.7%)
+Total wall-clock time:  0.39 seconds		us per probe:  0.389 us
+
+Testing multimap performance:  300000 pairs, 1000000 probes, incrementing keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range [0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range [0, 1000).
+Total hits:  997715/1000000 (99.8%)
+Total wall-clock time:  0.43 seconds		us per probe:  0.430 us
+
+Testing multimap performance:  300000 pairs, 1000000 probes, decrementing keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range [0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range [0, 1000).
+Total hits:  997325/1000000 (99.7%)
+Total wall-clock time:  0.43 seconds		us per probe:  0.431 us
+
+Testing multimap performance:  15000000 pairs, 1000000 probes, random keys.
+Adding 15000000 pairs to multimap.  Keys in range [0, 100000), values in range [0, 50).
+Probing multimap 1000000 times.  Keys in range [0, 100000), values in range [0, 50).
+Total hits:  949766/1000000 (95.0%)
+Total wall-clock time:  0.51 seconds		us per probe:  0.508 us
+
+Testing multimap performance:  100000 pairs, 50000 probes, incrementing keys.
+Adding 100000 pairs to multimap.  Keys in range [0, 100000), values in range [0, 50).
+Probing multimap 50000 times.  Keys in range [0, 100000), values in range [0, 50).
+Total hits:  1803/50000 (3.6%)
+Total wall-clock time:  6.16 seconds		us per probe:  123.268 us
+
+Testing multimap performance:  100000 pairs, 50000 probes, decrementing keys.
+Adding 100000 pairs to multimap.  Keys in range [0, 100000), values in range [0, 50).
+Probing multimap 50000 times.  Keys in range [0, 100000), values in range [0, 50).
+Total hits:  1839/50000 (3.7%)
+Total wall-clock time:  6.20 seconds		us per probe:  124.052 us
+
+

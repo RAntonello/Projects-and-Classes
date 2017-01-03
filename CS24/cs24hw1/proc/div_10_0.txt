@@ -1,0 +1,1 @@
+The program runs in an infinte loop in the 10/0 case because the remainder never changes since 10-0=10 and is therefore never negative.

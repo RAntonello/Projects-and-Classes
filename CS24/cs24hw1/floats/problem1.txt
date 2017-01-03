@@ -1,0 +1,5 @@
+A. We have that val = y/((2^k)-1) because this is the closed form of the sum from i=1 to infinity of y/((2^k)^i).
+
+B.  a. 1/7
+	b. 3/5
+	c. 1/9

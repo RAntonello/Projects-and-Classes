@@ -1,0 +1,320 @@
+# NOTE: the python caffe file needs to be on your python path for this file to work. 
+
+import numpy as np
+from sklearn.externals.joblib import Memory
+import threading
+import os
+
+from visipedia.extractors import BaseExtractor
+
+try:
+	import caffe
+ 
+	'''
+	from caffe import imagenet
+	class PersonalCaffe(imagenet.ImageNetClassifier):
+		def prepare_image(self, image):
+			"""
+			The predict() method takes an image path, this function is a convenience function
+			so that you can just give it the image
+			"""
+			# This is a copy of the `prepare_image` function from imagenet
+			if image.ndim == 2:
+				image = np.tile(image[:, :, np.newaxis], (1, 1, 3))
+			elif image.shape[2] == 4:
+				image = image[:, :, :3]
+			# Resize and convert to BGR
+			img_reshape = (imagenet.transform.resize(image, (imagenet.IMAGE_DIM,imagenet.IMAGE_DIM)) * 255)[:, :, ::-1]
+			# subtract main
+			img_reshape -= imagenet.IMAGENET_MEAN
+			return imagenet.oversample(img_reshape, self._center_only)
+                
+                def predict_images(self, images):
+			input_blobs = [self.prepare_image(im) for im in images]
+                        self.caffenet.Forward(input_blobs, self._output_blobs)
+                        return [self._output_blobs[i].mean(0).flatten() for i in range(len(images))]
+                        
+                def predict_image(self, image):
+			self.caffenet.Forward([self.prepare_image(image)], self._output_blobs)
+			return self._output_blobs[0].mean(0).flatten()
+	'''
+                
+        '''
+        class PersonalCaffeBatch(imagenet.ImageNetClassifier):
+                """ 
+                Like PersonalCaffe but processes multiple queued requests in batch (not debugged)
+                """
+                def __init__(self, imagenet_meta_path, pretrained_network_path, num_output=1000, center_only=True, max_batch_size=256, min_batch_size=256):
+                        super(PersonalCaffe, self).__init__(imagenet_meta_path, pretrained_network_path, num_output=num_output, center_only=center_only)
+                        self.max_queued_semaphore = threading.Semaphore(value=max_batch_size)
+                        self.wait_semaphore = threading.Semaphore(value=0)
+                        self.lock = threading.Lock()
+                        self.is_processing = False
+                        self.input_blobs = []
+                        self.outputs = []
+                        self.max_batch_size = max_batch_size
+                        self.min_batch_size = min_batch_size
+        
+                
+                def predict_image(self, image):
+			"""
+			The predict() method takes an image path, this function is a convenience function
+			so that you can just give it the image
+			"""
+			# This is a copy of the `prepare_image` function from imagenet
+			if image.ndim == 2:
+				image = np.tile(image[:, :, np.newaxis], (1, 1, 3))
+			elif image.shape[2] == 4:
+				image = image[:, :, :3]
+			# Resize and convert to BGR
+			img_reshape = (imagenet.transform.resize(image, (imagenet.IMAGE_DIM,imagenet.IMAGE_DIM)) * 255)[:, :, ::-1]
+			# subtract main
+			img_reshape -= imagenet.IMAGENET_MEAN
+                        img = imagenet.oversample(img_reshape, self._center_only)
+                        
+                        # Add this image to the queue of images that need to be run through the network
+                        self.max_queued_semaphore.acquire()
+                        self.lock.acquire()
+                        ind = len(self.input_blobs)
+                        self.input_blobs.append(img)
+                        outputs = self.outputs
+                        wait_semaphore = self.wait_semaphore
+                        
+                        # If no thread is currently running images through the network, this thread will start the feature computation
+                        # job.  We also create a new empty queue for subsequent requests
+                        input_blobs = None
+                        if not self.is_processing and len(self.input_blobs) >= self.min_batch_size:
+                                input_blobs = self.input_blobs
+                                self.input_blobs = []
+                                self.is_processing = True
+                                self.outputs = []
+                                self.wait_sempahore = threading.Semaphore(value=0)
+                        self.lock.release()
+
+                        if input_blobs:
+                                # Compute features in batch by running all queued images through the network
+                                self.caffenet.Forward(input_blobs, self._output_blobs)
+                                
+                                # Signal clients that the features are ready
+                                self.lock.acquire()
+                                for i in range(len(input_blobs)):
+                                        outputs.append(np.copy(self._output_blobs[0].mean(0).flatten()))
+                                for i in range(len(input_blobs)):
+                                        wait_semaphore.release()
+                                        self.max_queued_semaphore.release()
+                                self.is_processing = False
+                                self.lock.release()
+                                
+                        # Wait for the network thread to process the image
+                        wait_semaphore.acquire()
+                        return outputs[ind]
+        '''
+        
+except:
+	print "WARNING: Caffe not available. Maybe it needs to be added to the python path?"
+
+class CaffeFeatures(BaseExtractor):
+	"""
+	Feature Extractor from a Caffe CNN Network. 
+	http://caffe.berkeleyvision.org/
+	"""
+	
+	def __init__(self, pretrained_network_path, imagenet_meta_path, num_output=None, center_only=True, cpu_mode=True, normalize=True, joblib_cache=None, extra_notes=""):
+		"""
+		pretrained_network_path -- The file path to the pretained network
+		imagenet_meta_path -- The file path to the network definition file
+		num_output -- The feature output length of the last layer of this network
+		center_only -- Extract only the center region
+		cpu_mode -- If True, then only the cpu will be used for feature extraction. If False, then the gpu will be used
+		normalize -- Normalize the feature before returning it. This applies to the individual layer features, not the concatenated feature
+		joblib_cache -- Specify a joblib_cach directory if you want to cache the feature computations
+		"""
+		super(CaffeFeatures, self).__init__()
+
+		'''
+		if num_output:
+                        self.net = PersonalCaffe(imagenet_meta_path, pretrained_network_path, num_output=num_output, center_only=center_only)
+		else:
+                        self.net = PersonalCaffe(imagenet_meta_path, pretrained_network_path, center_only=center_only)
+		if cpu_mode:
+			self.net.caffenet.set_mode_cpu()
+		else:
+			self.net.caffenet.set_mode_gpu()
+		self.net.caffenet.set_phase_test()
+		'''
+		mean = np.load(os.path.join(os.path.dirname(__file__), 'ilsvrc_2012_mean.npy'))
+		self.net = caffe.Classifier(imagenet_meta_path, pretrained_network_path, image_dims=(256,256), 
+			mean=mean, raw_scale=255.0, channel_swap=(2,1,0))
+		caffe.set_mode_cpu()
+		
+                self.pretrained_network_path = pretrained_network_path
+                self.imagenet_meta_path = imagenet_meta_path
+		self.cpu_mode = cpu_mode
+		self.center_only = center_only
+		self.normalize = normalize
+		if joblib_cache:
+			self.extract = joblib_cache.cache(self.extract)
+		
+		self.notes = "\n".join(["Caffe Feature Extractor",
+								"Pretrained Network Path: %s" % (pretrained_network_path,),
+								"Model Definition: %s" % (imagenet_meta_path,),
+								"Number of Output: %s" % (num_output),
+								"Center Only: %s" % (center_only,),
+								"CPU Mode: %s" % (cpu_mode,),
+								"Normalize: %s" % (normalize,),
+								"Joblib Cache: %s" % (joblib_cache,),
+								extra_notes])
+	
+	def extract(self, image, model_data, annotation_data, **kwargs):
+		"""
+		We expect a `layers` key to part of the **kwargs parameter. The value is an array
+		of layer names to extract features from. The features are concatenated together.
+		"""
+		if 'layers' not in kwargs or len(kwargs['layers']) == 0:
+			return None
+		
+		#score = self.net.predict_image(image)
+		scores = self.net.predict([np.float32(image)/255.0], not self.center_only)
+		
+		all_features = []
+		for layer in kwargs['layers']:
+			#feature = self.net.feature(layer) # assumes we are using the modified python file
+			feature = self.net.blobs[layer].data.flatten() 
+			if self.normalize:
+				feature = feature / np.linalg.norm(feature)
+			all_features.append(np.copy(feature))
+		
+		if len(all_features) == 1:
+			return all_features[0]
+			
+		else :
+			return np.hstack(all_features)
+	
+	##########################
+	# Methods for pickling and unpickling
+	def __getstate__(self):
+		state = dict(self.__dict__)
+		del state['net'] # we don't want to try to pickle the network
+		return state
+	def __setstate__(self, state):
+		self.__dict__ = state
+		self.net = PersonalCaffe(imagenet_meta_path, pretrained_network_path, num_output=num_output, center_only=center_only)
+		if self.cpu_mode:
+			self.net.caffenet.set_mode_cpu()
+		else:
+			self.net.caffenet.set_mode_gpu()
+		self.net.caffenet.set_phase_test()
+	###########################
+
+
+
+def save_image_regions_to_leveldb(category_data, extractor_data, data_dir, caffe_tools_dir=""):
+	"""
+        Create leveldb datasets for each region types, which is the format used for training using Caffe.  Assumes extract_image_regions() was already called
+	"""
+        datasets = ["train", "test", "validation"]
+        datasets_rand = [1,0,1]
+        for region_extractor, region_kwargs, feature_extractor, feature_kwargs in extractor_data:
+                fouts= {}
+                for dataset_id in datasets:
+                        file_list = (data_dir + "/" + region_extractor.name + "_" + dataset_id + ".txt")
+                        fouts[dataset_id] = open(file_list, "w") 
+                for image_id,cat_id,dataset_id in category_data:
+                        fname = str(image_id) + ".jpg"
+                        fouts[dataset_id].write(fname + " " + str(int(cat_id)-1) + '\n')
+                for dataset_id in datasets:
+                        fouts[dataset_id].close()
+                for i in range(len(datasets)):
+                        dataset_id = datasets[i]
+                        file_list = (data_dir + "/" + region_extractor.name + "_" + dataset_id + ".txt")
+                        db_name = (data_dir + "/" + region_extractor.name + "_" + dataset_id + "_db")
+                        os.system('GLOG_logtostderr=1 ' + caffe_tools_dir + 'convert_imageset.bin "' + data_dir +"/" + region_extractor.name + '/" "' + file_list + '" "' + db_name + '" ' + str(datasets_rand[i]))
+
+
+def compute_cnn_features_from_leveldb(extractor_data, data_dir, caffe_feature_extract_proto_template_file, mean_file=None, num_classes=None, caffe_tools_dir="", use_gpu=1):
+        datasets = ["train", "test", "validation"]
+        for dataset_id in datasets:
+                all_features = ""
+                for region_extractor, region_kwargs, feature_extractor, feature_kwargs in extractor_data:
+                        caffe_proto_file = data_dir + "/" + region_extractor.name + "_" + dataset_id + "_fe.prototxt"
+                        db_name = (data_dir + "/" + region_extractor.name + "_" + dataset_id + "_db")
+                        file_list = (data_dir + "/" + region_extractor.name + "_" + dataset_id + ".txt")
+                        features_file = (data_dir + "/" + region_extractor.name + "_" + dataset_id + "_features")
+                        all_features += " '" + features_file + "'"
+                        replace_in_template(caffe_feature_extract_proto_template_file, caffe_proto_file, {"<source>":db_name, "<meanfile>" : mean_file, "<num_classes>" : num_classes})
+                        with open(file_list) as f:
+                                lines = f.readlines()
+                        layers = ""
+                        for l in feature_kwargs["layers"]:
+                                layers += " " + l
+                        sys = caffe_tools_dir+"feature_extract.bin '" + caffe_proto_file + "' '" + feature_extractor.pretrained_network_path + "' " + str(len(lines)) +  " "  + str(int(use_gpu)-1) + " '" + features_file + "' " + layers
+                        print sys
+                        os.system(sys)
+                
+                combined_features = (data_dir + "/" + dataset_id + "_features")
+                sys = caffe_tools_dir + "combine_features.bin '" + combined_features + "' " + str(int(feature_extractor.normalize)) + " " + all_features
+                print sys
+                os.system(sys)
+
+
+
+def finetune_cnn_network_from_leveldb(extractor_data, data_dir, caffe_solver_template_file, caffe_train_template_file, caffe_val_template_file, caffe_initialize_solver_template_file=None, caffe_tools_dir="", num_classes=None, use_gpu=1, mean_file = None):
+        for region_extractor, region_kwargs, feature_extractor, feature_kwargs in extractor_data:
+                train_db_name = (data_dir + "/" + region_extractor.name + "_train_db")
+                val_db_name = (data_dir + "/" + region_extractor.name + "_validation_db")
+                train_proto_file = (data_dir + "/" + region_extractor.name + "_train.prototxt")
+                val_proto_file = (data_dir + "/" + region_extractor.name + "_validation.prototxt")
+                replace_in_template(caffe_train_template_file, train_proto_file, {"<source>" : train_db_name, "<num_classes>" : num_classes, "<meanfile>" : mean_file})
+                replace_in_template(caffe_val_template_file, val_proto_file, {"<source>" : val_db_name, "<num_classes>" : num_classes, "<meanfile>" : mean_file})
+                
+                if caffe_initialize_solver_template_file:
+                        log_dir = data_dir + "/logs_initialize_" + region_extractor.name
+                        file_list = (data_dir + "/" + region_extractor.name + "_train.txt")
+                        initialize_solver_file = (data_dir + "/" + region_extractor.name + "_initialize_solver.txt")
+                        layer_name = feature_kwargs["layers"][0]
+                        pretrained_model = feature_extractor.pretrained_network_path
+                        new_pretrained_model = (data_dir + "/" + region_extractor.name + "_model_initialize")
+                        with open(file_list) as f:
+                                lines = f.readlines()
+                        replace_in_template(caffe_initialize_solver_template_file, initialize_solver_file, {"<train_net>" : train_proto_file, "<use_gpu>" : use_gpu})
+                        os.system("mkdir '" + log_dir + "'; GLOG_stderrthreshold=0 GLOG_log_dir='" + log_dir + "' " + caffe_tools_dir + "finetune_initialize.bin '" + initialize_solver_file + "' '" + pretrained_model + "' " + layer_name + " " + str(len(lines)) + " '" + new_pretrained_model + "'")
+                else:
+                        new_pretrained_model = feature_extractor.pretrained_network_path
+                
+                log_dir = data_dir + "/logs_" + region_extractor.name
+                solver_file = (data_dir + "/" + region_extractor.name + "_solver.txt")
+                new_model = (data_dir + "/" + region_extractor.name + "_model")
+                replace_in_template(caffe_solver_template_file, solver_file, {"<train_net>" : train_proto_file, "<test_net>" : val_proto_file, "<snapshot>" : new_model, "<use_gpu>" : use_gpu})
+                os.system("mkdir '" + log_dir + "'; GLOG_stderrthreshold=0 GLOG_log_dir='" + log_dir + "' " + caffe_tools_dir + "finetune_net.bin '" + solver_file + "' '" + new_pretrained_model + "'")
+                feature_extractor.finetuned_network_path = new_model
+
+
+def train_svm_on_cnn_features(data_dir, lambd=0.000002, normalize=True, multithread=True):
+        train_file = data_dir + "/train_features.bin"
+        svm_model_file = data_dir + "/svm_model.txt"
+        opts = " -L " + str(lambd) 
+        opts2 = " -N -r 1" if normalize else " -r 1"
+        opts2 += " -D no_dataset"
+        if multithread:
+                opts2 += " -T 1"
+        sysTrain = self.exe_name + ' -d "' + train_file + '" -o "' + svm_model_file + '" ' + opts + opts2 
+        os.system(sysTrain)
+
+
+def train_cnn_region_classifier(image_data, category_data, extractor_data, model_data, model_annotations, data_dir, caffe_feature_extract_proto_template_file, caffe_solver_template_file=None, caffe_train_template_file=None, caffe_val_template_file=None, caffe_initialize_solver_template_file=None, caffe_tools_dir="", image_size=(256,256), num_classes=None, use_gpu=1, mean_file = None):
+        extract_image_regions(image_data, model_data, model_annotations, extractor_data, data_dir, image_size=image_size)
+        save_image_regions_to_leveldb(category_data, extractor_data, data_dir, caffe_tools_dir=caffe_tools_dir)
+        if caffe_solver_template_file:
+                finetune_cnn_network_from_leveldb(extractor_data, data_dir, caffe_solver_template_file, caffe_train_template_file, caffe_val_template_file, caffe_initialize_solver_template_file=caffe_initialize_solver_template_file, caffe_tools_dir=caffe_tools_dir, mean_file=mean_file, num_classes=num_classes, use_gpu=use_gpu)
+        compute_cnn_features_from_leveldb(extractor_data, data_dir, caffe_feature_extract_proto_template_file, mean_file=mean_file, num_classes=num_classes, caffe_tools_dir=caffe_tools_dir, use_gpu=use_gpu)
+        train_svm_on_cnn_features(data_dir)
+    
+    
+def replace_in_template(src_file, dst_file, match_replace_dict):
+        with open (src_file, "r") as f:
+                s = f.read()
+                for match,replace in match_replace_dict.iteritems():
+                        s = s.replace(str(match), str(replace))
+        with open(dst_file, 'w') as f:
+                f.write(s)
+

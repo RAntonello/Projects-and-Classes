@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>
+    	Summary
+    </title>
+    <style>
+     	.results-table{
+     		text-align: center;
+     		width : 100%;
+     		border-collapse: collapse;
+     	}
+     	table, td, th{
+     		border: 1px solid black;
+     	}
+     	td, th{
+     		padding: 15px;
+     	}
+    </style>
+   
+  </head>
+
+  <body>
+  	
+  	<div>
+  		<p>Accuracy : {{ accuracy }}</p>
+  		<p>Number of Categories : {{ category_data | length }}</p>
+  		<p>Number of Testing Images : {{ total_image_count }}</p>
+  	</div>
+  	
+  	<div>
+  		<span>Confusion Matrix: <a href='confusion_matrix.html'>Interactive</a></span> <span><a href='confusion_matrix.png'>Non-Interactive</a></span>
+  	</div>
+  	
+  	{% if top_k_path %}
+  		<div>
+  			<span><a href='{{ top_k_path }}'>Top K</a></span>
+  		</div>
+  	{% endif %}
+  	
+  	<div>
+  		<h3>Category Results</h3>
+  		<table class='results-table'>
+  			<thead>
+  				<tr>
+  					<th>Identifier</th>
+  					<th>Precision</th>
+  					<th>Recall</th>
+  					<th>Image Count</th>
+  					<th>True Positive Count</th>
+  					<th>False Positive Count</th>
+  					<th>False Negative Count</th>
+  				</tr>
+  			</thead>
+  			<tbody>
+  			{% for category in category_data.itervalues() %}
+  				<tr>
+  					<td><a href="{{ category['detail_url'] }}"> {{ category['name'] }} </a></td>
+  					<td>{{ category['precision'] }}</td>
+  					<td>{{ category['recall'] }}</td>
+  					<td>{{ category['total_count'] }}</td>
+  					<td>{{ category['tp_count'] }}</td>
+  					<td>{{ category['fp_count'] }}</td>
+  					<td>{{ category['fn_count'] }}</td>
+  				</tr>
+  			{% endfor %}
+  			</tbody>
+  		</table>
+  	</div>
+  </body>
+</html>
